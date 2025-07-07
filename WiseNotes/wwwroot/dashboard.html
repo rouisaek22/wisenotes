@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Dashboard | WizeNotes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+            margin: 0;
+            color: #1f2937;
+        }
+
+        header {
+            background-color: #111827;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+        }
+
+        .btn-logout {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background-color: #dc2626;
+        }
+
+        .main {
+            padding: 2rem;
+        }
+
+        .welcome {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .notebooks {
+            background-color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .notebooks h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .notebooks ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .notebooks li {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .notebooks li:last-child {
+            border-bottom: none;
+        }
+
+        .placeholder {
+            color: #6b7280;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>WizeNotes</h1>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+    </header>
+
+    <main class="main">
+        <div class="welcome" id="welcomeMsg">Welcome back!</div>
+
+        <div class="notebooks">
+            <h2>Your Notebooks</h2>
+            <ul id="notebookList">
+                <!-- You can dynamically inject real notebooks here -->
+                <li class="placeholder">No notebooks found. Start writing!</li>
+            </ul>
+        </div>
+    </main>
+
+    <script>
+        // Protect route
+        const token = localStorage.getItem("accessToken");
+        const userEmail = localStorage.getItem("userEmail");
+
+        if (!token) {
+            window.location.href = "login.html";
+        }
+
+        // Set welcome message
+        const welcomeEl = document.getElementById("welcomeMsg");
+        if (userEmail) {
+            welcomeEl.textContent = `Welcome, ${userEmail}`;
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "login.html";
+        }
+
+        // Example: fetch notebooks (you can replace this with real API later)
+        
+        fetch("/notebooks", {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })
+        .then(res => res.json())
+        .then(notebooks => {
+          const list = document.getElementById("notebookList");
+          list.innerHTML = "";
+          notebooks.forEach(n => {
+            const li = document.createElement("li");
+            li.textContent = n.title;
+            list.appendChild(li);
+          });
+        });
+        
+    </script>
+</body>
+
+</html>

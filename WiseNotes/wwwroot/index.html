@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WizeNotes - Smart, Secure Note-Taking</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: #111827;
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        header p {
+            margin-top: 0.5rem;
+            font-size: 1.1rem;
+            color: #9ca3af;
+        }
+
+        .hero {
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .hero h2 {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            color: #4b5563;
+        }
+
+        .hero-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #2563eb;
+        }
+
+        .btn-secondary {
+            background-color: #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+
+        .features {
+            display: grid;
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        }
+
+        .feature-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            color: #6b7280;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            font-size: 0.9rem;
+            color: #9ca3af;
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 2rem;
+            }
+
+            .hero h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>WizeNotes</h1>
+        <p>Smart, Secure, and Fast Note-Taking for Modern Minds</p>
+    </header>
+
+    <section class="hero">
+        <h2>Take notes like a pro.</h2>
+        <p>WizeNotes helps you capture thoughts, organize ideas, and stay productive — whether you're a developer,
+            student, or thinker.</p>
+
+        <div class="hero-buttons">
+            <a href="login.html" class="btn">Login</a>
+            <a href="signup.html" class="btn btn-secondary">Sign Up</a>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="feature-card">
+            <h3>🛡️ Secure by Design</h3>
+            <p>With built-in authentication and optional two-factor login, your notes stay private and protected.</p>
+        </div>
+        <div class="feature-card">
+            <h3>📝 Minimal & Focused</h3>
+            <p>Distraction-free interface to let your ideas flow. Just open, write, and save — no clutter.</p>
+        </div>
+        <div class="feature-card">
+            <h3>🌐 Sync Across Devices</h3>
+            <p>Access your notes anywhere — whether on desktop or mobile, WizeNotes keeps them synced.</p>
+        </div>
+        <div class="feature-card">
+            <h3>🚀 Fast & Lightweight</h3>
+            <p>Built with ASP.NET Core and modern tech, WizeNotes loads fast and runs smooth even offline.</p>
+        </div>
+    </section>
+
+    <footer>
+        &copy; 2025 WizeNotes. All rights reserved.
+    </footer>
+
+</body>
+
+</html>
