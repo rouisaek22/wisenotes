@@ -1,8 +1,9 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using WiseNotes.Models;
 
-namespace WiseNotes;
+namespace WiseNotes.Database;
 
 public class AppDbContext : IdentityDbContext<IdentityUser>
 {       

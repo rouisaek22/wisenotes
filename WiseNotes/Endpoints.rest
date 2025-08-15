@@ -1,6 +1,0 @@
-curl -X POST https://localhost:7032/login?useCookies=true&useSessionCookies=false \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@mail.com",
-    "password": "P@ss1word!"
-}'

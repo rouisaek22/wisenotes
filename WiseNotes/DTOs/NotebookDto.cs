@@ -1,4 +1,6 @@
-namespace WiseNotes;
+using WiseNotes.Models;
+
+namespace WiseNotes.DTOs;
 
 public record NotebookDto(int Id, string Title, int Count)
 {
@@ -10,6 +12,3 @@ public record NotebookDto(int Id, string Title, int Count)
         this.Count = notebook.Notes.Count;
     }
 }
-
-public record NoteDto(int Id, string Content);
-public record CreateNotebookDto(string Title);
