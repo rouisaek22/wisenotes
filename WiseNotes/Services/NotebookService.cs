@@ -9,7 +9,7 @@ using WiseNotes.Models;
 namespace WiseNotes.Services;
 
 public static class NotebookService
-{    
+{
     public static async Task<Ok<List<NotebookDto>>> GetAllNotebooks(AppDbContext db, UserManager<User> user, ClaimsPrincipal claims)
     {
         var userId = user.GetUserId(claims);
@@ -17,8 +17,11 @@ public static class NotebookService
         var notebooks = await db.Notebooks
             .AsNoTracking()
             .Where(u => u.UserId == userId)
-            .Select(n => new NotebookDto(n))
-            .ToListAsync();
+            .Select(n => new NotebookDto
+            {
+                Id = n.Id,
+                Title = n.Title
+            }).ToListAsync();
 
         return TypedResults.Ok(notebooks);
     }
@@ -30,8 +33,12 @@ public static class NotebookService
         var notebook = await db.Notebooks
             .AsNoTracking()
             .Where(u => u.UserId == userId && u.Id == notebookId)
-            .Select(n => new NotebookDto(n))
-            .FirstOrDefaultAsync();
+            .Select(n => new NotebookDto
+            {
+                Id = n.Id,
+                Title = n.Title,
+                Notes = n.Notes.Count
+            }).FirstOrDefaultAsync();
 
         return notebook != null ? TypedResults.Ok(notebook) : TypedResults.NotFound();
     }
@@ -54,7 +61,12 @@ public static class NotebookService
         db.Notebooks.Add(notebook);
         await db.SaveChangesAsync();
 
-        var notebookDto = new NotebookDto(notebook);
+        var notebookDto = new NotebookDto
+        {
+            Id = notebook.Id,
+            Title = notebook.Title,
+            Notes = notebook.Notes.Count
+        };
 
         return TypedResults.Created($"/notebooks/{notebookDto.Id}", notebookDto);
     }

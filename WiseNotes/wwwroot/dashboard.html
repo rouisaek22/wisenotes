@@ -127,23 +127,55 @@
         }
 
         // Example: fetch notebooks (you can replace this with real API later)
-        
+
         fetch("/notebooks", {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
         })
-        .then(res => res.json())
-        .then(notebooks => {
-          const list = document.getElementById("notebookList");
-          list.innerHTML = "";
-          notebooks.forEach(n => {
-            const li = document.createElement("li");
-            li.textContent = n.title;
-            list.appendChild(li);
-          });
-        });
-        
+            .then(res => res.json())
+            .then(notebooks => {
+                const list = document.getElementById("notebookList");
+                // list.innerHTML = "";
+
+                notebooks.forEach(n => {
+                    const li = document.createElement("li");
+
+                    // title
+                    const title = document.createTextNode(n.title + " ");
+
+                    // view link
+                    const view = document.createElement("a");
+                    view.href = `notebook.html?id=${n.id}`;
+                    view.textContent = "[View] ";
+
+                    // edit link
+                    const edit = document.createElement("a");
+                    edit.href = `editNotebook.html?id=${n.id}`;
+                    edit.textContent = "[Edit] ";
+
+                    // delete link (could be handled by fetch DELETE instead of href)
+                    const del = document.createElement("a");
+                    del.href = "#";
+                    del.textContent = "[Delete]";
+                    del.onclick = e => {
+                        e.preventDefault();
+                        fetch(`/notebooks/${n.id}`, {
+                            method: "DELETE",
+                            headers: { Authorization: `Bearer ${token}` }
+                        }).then(res => {
+                            if (res.ok) {
+                                li.remove(); // remove from list after deletion
+                            }
+                        });
+                    };
+
+                    li.append(title, view, edit, del);
+                    list.appendChild(li);
+                });
+
+            });
+
     </script>
 </body>
 

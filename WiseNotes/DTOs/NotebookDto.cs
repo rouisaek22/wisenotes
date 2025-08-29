@@ -1,14 +1,8 @@
-using WiseNotes.Models;
-
 namespace WiseNotes.DTOs;
 
-public record NotebookDto(int Id, string Title, int Count)
+public class NotebookDto
 {
-    public NotebookDto(Notebook notebook)
-        : this(notebook.Id, notebook.Title, notebook.Notes.Count)
-    {
-        this.Id = notebook.Id;
-        this.Title = notebook.Title;
-        this.Count = notebook.Notes.Count;
-    }
+    public int Id { get; set; }
+    public string? Title { get; set; }
+    public int Notes { get; set; }
 }

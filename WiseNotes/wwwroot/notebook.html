@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Notebook</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .field {
+            margin-bottom: 10px;
+        }
+
+        .label {
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Notebook Details</h1>
+    <div id="notebook">
+        <div class="field"><span class="label">Id:</span> <span id="nb-id"></span></div>
+        <div class="field"><span class="label">Title:</span> <span id="nb-title"></span></div>
+        <div class="field"><span class="label">Count:</span> <span id="nb-count"></span></div>
+    </div>
+
+    <script>
+        // assume token is stored in localStorage or set somewhere
+        const token = localStorage.getItem("accessToken");
+
+        // read id from query string ?id=123
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get("id");
+
+        if (!id) {
+            document.getElementById("notebook").textContent = "Missing notebook id.";
+        } else {
+            fetch(`/notebooks/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+                .then(res => {
+                    if (!res.ok) throw new Error("Notebook not found");
+                    return res.json();
+                })
+                .then(nb => {
+                    document.getElementById("nb-id").textContent = nb.id;
+                    document.getElementById("nb-title").textContent = nb.title;
+                    document.getElementById("nb-count").textContent = nb.notes;
+                })
+                .catch(err => {
+                    document.getElementById("notebook").textContent = err.message;
+                });
+        }
+    </script>
+</body>
+
+</html>
