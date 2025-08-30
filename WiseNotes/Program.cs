@@ -1,6 +1,8 @@
+using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WiseNotes;
 using WiseNotes.Database;
@@ -62,13 +64,38 @@ else if (builder.Environment.IsProduction())
 var app = builder.Build();
 app.UseHttpsRedirection();
 
+app.UseMiddleware<GlobalErrorHandlingMiddleware>();
+
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
+        context.Response.ContentType = "application/problem+json";
+
+        var problemDetails = new ProblemDetails
+        {
+            Type = "https://example.com/errors/internal",
+            Title = "An unexpected error occurred",
+            Status = (int)HttpStatusCode.InternalServerError,
+            Detail = "Please contact support if the problem persists.",
+            Instance = context.Request.Path
+        };
+
+        problemDetails.Extensions.Add("traceId", context.TraceIdentifier);
+        problemDetails.Extensions.Add("timestamp", DateTime.UtcNow);
+
+        await context.Response.WriteAsJsonAsync(problemDetails);
+    });
+});
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseFileServer();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
+    // app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 
