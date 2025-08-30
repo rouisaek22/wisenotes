@@ -1,3 +1,7 @@
 namespace WiseNotes.DTOs;
 
-public record NoteDto(int Id, string Content);
+public class NoteDto
+{
+    public int Id { get; set; }
+    public string? Content { get; set; }
+}

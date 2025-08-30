@@ -1,10 +1,12 @@
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WiseNotes;
 using WiseNotes.Database;
 using WiseNotes.Endpoints;
 using WiseNotes.Models;
+using WiseNotes.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +22,17 @@ builder.WebHost.ConfigureKestrel(options =>
         httpsOptions.ServerCertificate = X509Certificate2.CreateFromPemFile(certPath, keyPath);
     });
 });
+
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddCors(opt =>
+    {
+        opt.AddPolicy("DevelopmentPolicy", conf =>
+        {
+            conf.AllowAnyHeader().AllowAnyMethod().AllowAnyOrigin();
+        });
+    });
+}
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -62,10 +75,13 @@ if (app.Environment.IsDevelopment())
     // using var scope = app.Services.CreateScope();
     // var database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     // database.Database.Migrate();
+
+    app.UseCors("DevelopmentPolicy");
 }
 
 app.MapCustomIdentityApi<User>();
 
 NotebookEndpoints.Map(app);
+NoteEndpoints.Map(app);
 
 app.Run();

@@ -3,57 +3,202 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Notebook</title>
+    <title>Notebook | WizeNotes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
     <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
+            font-family: 'Inter', sans-serif;
+            background-color: #f9fafb;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        header {
+            background-color: #111827;
+            color: white;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+        }
+
+        .btn-logout {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+        }
+
+        .btn-logout:hover {
+            background-color: #dc2626;
+        }
+
+        main {
+            padding: 2rem;
+        }
+
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 2rem;
+        }
+
+        .card h2 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
         }
 
         .field {
-            margin-bottom: 10px;
+            margin-bottom: 0.75rem;
         }
 
         .label {
-            font-weight: bold;
+            font-weight: 600;
+            color: #374151;
+            margin-right: 0.5rem;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul li {
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        ul li:last-child {
+            border-bottom: none;
+        }
+
+        .note-input {
+            width: 100%;
+            padding: 4px;
+            font-size: 1rem;
+        }
+
+        .note-content {
+            cursor: pointer;
+            display: block;
+            padding: 6px 0;
         }
     </style>
 </head>
 
 <body>
-    <h1>Notebook Details</h1>
-    <div id="notebook">
-        <div class="field"><span class="label">Id:</span> <span id="nb-id"></span></div>
-        <div class="field"><span class="label">Title:</span> <span id="nb-title"></span></div>
-        <div class="field"><span class="label">Count:</span> <span id="nb-count"></span></div>
-    </div>
+    <header>
+        <h1>WizeNotes</h1>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+    </header>
+
+    <main>
+        <div class="card">
+            <h2>Notebook Details</h2>
+            <div id="notebook">
+                <div class="field"><span class="label">Id:</span> <span id="nb-id"></span></div>
+                <div class="field"><span class="label">Title:</span> <span id="nb-title"></span></div>
+                <div class="field"><span class="label">Count:</span> <span id="nb-count"></span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Notes</h2>
+            <ul id="notesList"></ul>
+        </div>
+    </main>
 
     <script>
-        // assume token is stored in localStorage or set somewhere
         const token = localStorage.getItem("accessToken");
+        if (!token) window.location.href = "login.html";
 
-        // read id from query string ?id=123
-        const params = new URLSearchParams(window.location.search);
-        const id = params.get("id");
+        const params = new URLSearchParams(location.search);
+        const notebookId = params.get("id");
 
-        if (!id) {
-            document.getElementById("notebook").textContent = "Missing notebook id.";
-        } else {
-            fetch(`/notebooks/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
+        // load notebook header
+        fetch(`/notebooks/${notebookId}`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.ok ? r.json() : Promise.reject("Notebook not found"))
+            .then(nb => {
+                document.getElementById("nb-id").textContent = nb.id;
+                document.getElementById("nb-title").textContent = nb.title;
+                document.getElementById("nb-count").textContent = nb.notes;
             })
-                .then(res => {
-                    if (!res.ok) throw new Error("Notebook not found");
-                    return res.json();
-                })
-                .then(nb => {
-                    document.getElementById("nb-id").textContent = nb.id;
-                    document.getElementById("nb-title").textContent = nb.title;
-                    document.getElementById("nb-count").textContent = nb.notes;
-                })
-                .catch(err => {
-                    document.getElementById("notebook").textContent = err.message;
+            .catch(msg => document.getElementById("notebook").textContent = msg);
+
+        // load notes
+        const list = document.getElementById("notesList");
+        fetch(`/notebooks/${notebookId}/notes`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.json())
+            .then(notes => {
+                list.innerHTML = notes.map(n =>
+                    `<li data-id="${n.id}">
+           <span class="note-content">${escapeHtml(n.content || "")}</span>
+         </li>`
+                ).join("");
+            });
+
+        // inline edit via event delegation
+        list.addEventListener("dblclick", e => {
+            const span = e.target.closest(".note-content");
+            if (!span) return;
+            const li = span.parentElement;
+            const old = span.textContent;
+            const input = document.createElement("input");
+            input.className = "note-input";
+            input.value = old;
+            li.replaceChild(input, span);
+            input.focus();
+
+            const save = () => {
+                const content = input.value;
+                const id = li.dataset.id;
+                fetch(`/notebooks/${notebookId}/notes/${id}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ content })
+                }).then(res => {
+                    const newSpan = document.createElement("span");
+                    newSpan.className = "note-content";
+                    newSpan.textContent = res.ok ? content : old; // revert on failure
+                    li.replaceChild(newSpan, input);
+                }).catch(() => {
+                    const newSpan = document.createElement("span");
+                    newSpan.className = "note-content";
+                    newSpan.textContent = old;
+                    li.replaceChild(newSpan, input);
                 });
+            };
+
+            input.addEventListener("keydown", ev => { if (ev.key === "Enter") input.blur(); });
+            input.addEventListener("blur", save);
+        });
+
+        // basic HTML escaping to avoid injecting markup from note content
+        function escapeHtml(s) {
+            return String(s)
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;").replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
         }
     </script>
 </body>
