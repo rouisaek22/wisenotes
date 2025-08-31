@@ -43,14 +43,17 @@ public static class NotebookService
         return notebook != null ? TypedResults.Ok(notebook) : TypedResults.NotFound();
     }
 
-    public static async Task<Results<Created<NotebookDto>, BadRequest>> CreateNotebook(AppDbContext db, UserManager<User> user, ClaimsPrincipal claims, CreateNotebookDto request)
+    public static async Task<Results<Created<NotebookDto>, BadRequest<ErrorResponse>>> CreateNotebook(AppDbContext db, UserManager<User> user, ClaimsPrincipal claims, CreateNotebookDto request)
     {
         var userId = user.GetUserId(claims);
 
         if (string.IsNullOrWhiteSpace(request.Title))
-        {
-            return TypedResults.BadRequest();
-        }
+            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), "Title is required"));
+
+        const int titleLength = 50;
+
+        if (request.Title.Length > titleLength)
+            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), $"Title must be less then {titleLength}"));
 
         var notebook = new Notebook
         {
@@ -71,7 +74,7 @@ public static class NotebookService
         return TypedResults.Created($"/notebooks/{notebookDto.Id}", notebookDto);
     }
 
-    public static async Task<Results<NotFound, NoContent>> UpdateNotebook(AppDbContext db, UserManager<User> user, ClaimsPrincipal claims, CreateNotebookDto request, int notebookId)
+    public static async Task<Results<NotFound, NoContent, BadRequest<ErrorResponse>>> UpdateNotebook(AppDbContext db, UserManager<User> user, ClaimsPrincipal claims, CreateNotebookDto request, int notebookId)
     {
         var userId = user.GetUserId(claims);
 
@@ -79,11 +82,16 @@ public static class NotebookService
 
         if (notebook != null)
         {
-            if (notebook.Title != request.Title && !string.IsNullOrWhiteSpace(request.Title))
-            {
-                notebook.Title = request.Title;
-                await db.SaveChangesAsync();
-            }
+            if (string.IsNullOrWhiteSpace(request.Title))
+                return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), "Title is required"));
+
+            const int titleLength = 50;
+
+            if (request.Title.Length > titleLength)
+                return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), $"Title must be less then {titleLength}"));
+
+            notebook.Title = request.Title;
+            await db.SaveChangesAsync();
         }
         else
             return TypedResults.NotFound();

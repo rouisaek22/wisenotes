@@ -52,7 +52,7 @@ public static class NoteService
         return note != null ? TypedResults.Ok(note) : TypedResults.NotFound();
     }
 
-    public static async Task<Results<Created<NoteDto>, BadRequest, ForbidHttpResult>> CreateNote(
+    public static async Task<Results<Created<NoteDto>, BadRequest<ErrorResponse>, ForbidHttpResult>> CreateNote(
         AppDbContext db,
         UserManager<User> userManager,
         ClaimsPrincipal claims,
@@ -62,9 +62,12 @@ public static class NoteService
         var userId = userManager.GetUserId(claims);
 
         if (string.IsNullOrWhiteSpace(request.Content))
-        {
-            return TypedResults.BadRequest();
-        }
+            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), "Content is required"));
+
+        const int contentLength = 500;
+
+        if (request.Content.Length > contentLength)
+            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), $"Content must be less then {contentLength}"));
 
         // Check that the notebook exists and belongs to this user
         var notebook = await db.Notebooks
@@ -94,7 +97,7 @@ public static class NoteService
         return TypedResults.Created($"/notebooks/{notebookId}/notes/{noteDto.Id}", noteDto);
     }
 
-    public static async Task<Results<Ok<NoteDto>, NotFound, BadRequest>> UpdateNote(
+    public static async Task<Results<Ok<NoteDto>, NotFound, BadRequest<ErrorResponse>>> UpdateNote(
         AppDbContext db,
         UserManager<User> user,
         ClaimsPrincipal claims,
@@ -105,7 +108,12 @@ public static class NoteService
         var userId = user.GetUserId(claims);
 
         if (string.IsNullOrWhiteSpace(request.Content))
-            return TypedResults.BadRequest();
+            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), "Content is required"));
+
+        const int contentLength = 500;
+
+        if (request.Content.Length > contentLength)
+            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), $"Content must be less then {contentLength}"));
 
         var note = await db.Notes
             .Include(n => n.Notebook)
