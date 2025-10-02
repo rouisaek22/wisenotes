@@ -14,16 +14,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 Console.WriteLine($"🚀 Running in: {builder.Environment.EnvironmentName}");
 
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.ConfigureHttpsDefaults(httpsOptions =>
-    {
-        var certPath = Path.Combine(builder.Environment.ContentRootPath, "localhost.pem");
-        var keyPath = Path.Combine(builder.Environment.ContentRootPath, "localhost-key.pem");
-
-        httpsOptions.ServerCertificate = X509Certificate2.CreateFromPemFile(certPath, keyPath);
-    });
-});
 
 if (builder.Environment.IsDevelopment())
 {
@@ -51,17 +41,18 @@ builder.Services.AddIdentityApiEndpoints<User>(configure =>
 if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DevConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 }
 else if (builder.Environment.IsProduction())
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseNpgsql(builder.Configuration.GetConnectionString("ProConnection")));
 }
 
 var app = builder.Build();
+
 app.UseHttpsRedirection();
 
 app.UseMiddleware<GlobalErrorHandlingMiddleware>();
