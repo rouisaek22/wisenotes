@@ -1,14 +1,12 @@
-using System.Net;
-using System.Security.Cryptography.X509Certificates;
-using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
+using System.Net;
 using WiseNotes;
 using WiseNotes.Database;
 using WiseNotes.Endpoints;
 using WiseNotes.Models;
-using WiseNotes.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,7 +25,52 @@ if (builder.Environment.IsDevelopment())
 }
 
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Version = "v1",
+        Title = "ToDo API",
+        Description = "An ASP.NET Core Web API for managing Notes",
+        TermsOfService = new Uri("https://example.com/terms"),
+        Contact = new OpenApiContact
+        {
+            Name = "Example Contact",
+            Url = new Uri("https://example.com/contact")
+        },
+        License = new OpenApiLicense
+        {
+            Name = "Example License",
+            Url = new Uri("https://example.com/license")
+        }
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+
+});
 
 builder.Services.AddAuthorization();
 
@@ -40,15 +83,15 @@ builder.Services.AddIdentityApiEndpoints<User>(configure =>
 
 if (builder.Environment.IsDevelopment())
 {
-    builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    builder.Services.AddDbContext<AppDbContext>(
+        opt => opt.UseSqlite("Data Source=wise.db"));
 
     builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 }
 else if (builder.Environment.IsProduction())
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("ProConnection")));
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
 
 var app = builder.Build();
@@ -86,13 +129,17 @@ app.UseFileServer();
 
 if (app.Environment.IsDevelopment())
 {
-    // app.UseDeveloperExceptionPage();
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 
-    // using var scope = app.Services.CreateScope();
-    // var database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    // database.Database.Migrate();
+    using var scope = app.Services.CreateScope();
+    var um = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+    if (await um.FindByEmailAsync("dev@local") is null)
+    {
+        var u = new User { UserName = "dev@local", Email = "dev@local", EmailConfirmed = true };
+        await um.CreateAsync(u, "Password123!");
+    }
 
     app.UseCors("DevelopmentPolicy");
 }

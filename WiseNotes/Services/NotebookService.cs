@@ -5,18 +5,34 @@ using Microsoft.EntityFrameworkCore;
 using WiseNotes.Database;
 using WiseNotes.DTOs;
 using WiseNotes.Models;
+using WiseNotes.Validations;
+
 
 namespace WiseNotes.Services;
 
+/// <summary>
+/// Provides notebook-related operations such as retrieving, creating, updating, and deleting notebooks for authenticated users.
+/// </summary>
 public static class NotebookService
 {
-    public static async Task<Ok<List<NotebookDto>>> GetAllNotebooks(AppDbContext db, UserManager<User> user, ClaimsPrincipal claims)
+    /// <summary>
+    /// Retrieves all notebooks belonging to the authenticated user.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="user">The user manager for user operations.</param>
+    /// <param name="claims">The claims principal representing the current user.</param>
+    /// <returns>A list of notebooks if authorized, otherwise an unauthorized result.</returns>
+    public static async Task<Results<Ok<List<NotebookDto>>, UnauthorizedHttpResult>> GetAllNotebooks(AppDbContext db,
+        UserManager<User> user, ClaimsPrincipal claims)
     {
         var userId = user.GetUserId(claims);
 
+        if (string.IsNullOrEmpty(userId))
+            return TypedResults.Unauthorized();
+
         var notebooks = await db.Notebooks
             .AsNoTracking()
-            .Where(u => u.UserId == userId)
+            .Where(n => n.UserId == userId)
             .Select(n => new NotebookDto
             {
                 Id = n.Id,
@@ -26,13 +42,25 @@ public static class NotebookService
         return TypedResults.Ok(notebooks);
     }
 
-    public static async Task<Results<Ok<NotebookDto>, NotFound>> GetNotebook(AppDbContext db, UserManager<User> user, ClaimsPrincipal claims, int notebookId)
+    /// <summary>
+    /// Retrieves a specific notebook by its ID for the authenticated user.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="user">The user manager for user operations.</param>
+    /// <param name="claims">The claims principal representing the current user.</param>
+    /// <param name="notebookId">The ID of the notebook to retrieve.</param>
+    /// <returns>The notebook if found and authorized, otherwise not found or unauthorized result.</returns>
+    public static async Task<Results<Ok<NotebookDto>, NotFound, UnauthorizedHttpResult>> GetNotebook(AppDbContext db,
+        UserManager<User> user, ClaimsPrincipal claims, int notebookId)
     {
         var userId = user.GetUserId(claims);
 
+        if (string.IsNullOrEmpty(userId))
+            return TypedResults.Unauthorized();
+
         var notebook = await db.Notebooks
             .AsNoTracking()
-            .Where(u => u.UserId == userId && u.Id == notebookId)
+            .Where(n => n.UserId == userId && n.Id == notebookId)
             .Select(n => new NotebookDto
             {
                 Id = n.Id,
@@ -43,17 +71,27 @@ public static class NotebookService
         return notebook != null ? TypedResults.Ok(notebook) : TypedResults.NotFound();
     }
 
-    public static async Task<Results<Created<NotebookDto>, BadRequest<ErrorResponse>>> CreateNotebook(AppDbContext db, UserManager<User> user, ClaimsPrincipal claims, CreateNotebookDto request)
+    /// <summary>
+    /// Creates a new notebook for the authenticated user.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="user">The user manager for user operations.</param>
+    /// <param name="claims">The claims principal representing the current user.</param>
+    /// <param name="request">The notebook creation request data.</param>
+    /// <returns>The created notebook if successful, otherwise a bad request or unauthorized result.</returns>
+    public static async Task<Results<Created<NotebookDto>, BadRequest<ErrorResponse>, UnauthorizedHttpResult>> CreateNotebook(AppDbContext db,
+        UserManager<User> user, ClaimsPrincipal claims, CreateNotebookDto request)
     {
         var userId = user.GetUserId(claims);
+
+        if (string.IsNullOrEmpty(userId))
+            return TypedResults.Unauthorized();
 
         if (string.IsNullOrWhiteSpace(request.Title))
             return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), "Title is required"));
 
-        const int titleLength = 50;
-
-        if (request.Title.Length > titleLength)
-            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), $"Title must be less then {titleLength}"));
+        if (request.Title.Length > Constants.TitleLength)
+            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), $"Title must be less then {Constants.TitleLength}"));
 
         var notebook = new Notebook
         {
@@ -74,9 +112,22 @@ public static class NotebookService
         return TypedResults.Created($"/notebooks/{notebookDto.Id}", notebookDto);
     }
 
-    public static async Task<Results<NotFound, NoContent, BadRequest<ErrorResponse>>> UpdateNotebook(AppDbContext db, UserManager<User> user, ClaimsPrincipal claims, CreateNotebookDto request, int notebookId)
+    /// <summary>
+    /// Updates the title of an existing notebook for the authenticated user.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="user">The user manager for user operations.</param>
+    /// <param name="claims">The claims principal representing the current user.</param>
+    /// <param name="request">The notebook update request data.</param>
+    /// <param name="notebookId">The ID of the notebook to update.</param>
+    /// <returns>No content if successful, otherwise not found, bad request, or unauthorized result.</returns>
+    public static async Task<Results<NotFound, NoContent, BadRequest<ErrorResponse>, UnauthorizedHttpResult>> UpdateNotebook(AppDbContext db,
+        UserManager<User> user, ClaimsPrincipal claims, CreateNotebookDto request, int notebookId)
     {
         var userId = user.GetUserId(claims);
+
+        if (string.IsNullOrEmpty(userId))
+            return TypedResults.Unauthorized();
 
         var notebook = await db.Notebooks.FirstOrDefaultAsync(nb => nb.Id == notebookId && nb.UserId == userId);
 
@@ -85,10 +136,8 @@ public static class NotebookService
             if (string.IsNullOrWhiteSpace(request.Title))
                 return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), "Title is required"));
 
-            const int titleLength = 50;
-
-            if (request.Title.Length > titleLength)
-                return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), $"Title must be less then {titleLength}"));
+            if (request.Title.Length > Constants.TitleLength)
+                return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), $"Title must be less then {Constants.TitleLength}"));
 
             notebook.Title = request.Title;
             await db.SaveChangesAsync();
@@ -99,9 +148,21 @@ public static class NotebookService
         return TypedResults.NoContent();
     }
 
-    public static async Task<Results<NoContent, NotFound>> DeleteNotebook(AppDbContext db, UserManager<User> user, ClaimsPrincipal claims, int notebookId)
+    /// <summary>
+    /// Deletes a notebook for the authenticated user.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="user">The user manager for user operations.</param>
+    /// <param name="claims">The claims principal representing the current user.</param>
+    /// <param name="notebookId">The ID of the notebook to delete.</param>
+    /// <returns>No content if successful, otherwise not found or unauthorized result.</returns>
+    public static async Task<Results<NoContent, NotFound, UnauthorizedHttpResult>> DeleteNotebook(AppDbContext db,
+        UserManager<User> user, ClaimsPrincipal claims, int notebookId)
     {
         var userId = user.GetUserId(claims);
+
+        if (string.IsNullOrEmpty(userId))
+            return TypedResults.Unauthorized();
 
         var notebook = await db.Notebooks.FirstOrDefaultAsync(nb => nb.Id == notebookId && nb.UserId == userId);
 

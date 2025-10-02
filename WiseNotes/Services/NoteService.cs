@@ -5,18 +5,30 @@ using Microsoft.EntityFrameworkCore;
 using WiseNotes.Database;
 using WiseNotes.DTOs;
 using WiseNotes.Models;
+using WiseNotes.Validations;
 
 namespace WiseNotes.Services;
 
+/// <summary>
+/// Provides methods for managing notes within the application.
+/// </summary>
 public static class NoteService
 {
-    public static async Task<Ok<List<NoteDto>>> GetAllNotes(
-        AppDbContext db,
-        UserManager<User> user,
-        ClaimsPrincipal claims,
-        int notebookId)
+    /// <summary>
+    /// Retrieves all notes for a specific notebook belonging to the authenticated user.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="user">The user manager for user operations.</param>
+    /// <param name="claims">The claims principal representing the current user.</param>
+    /// <param name="notebookId">The ID of the notebook to retrieve notes from.</param>
+    /// <returns>A list of notes if authorized, otherwise an unauthorized result.</returns>
+    public static async Task<Results<Ok<List<NoteDto>>, UnauthorizedHttpResult>> GetAllNotes(AppDbContext db,
+        UserManager<User> user, ClaimsPrincipal claims, int notebookId)
     {
         var userId = user.GetUserId(claims);
+
+        if (string.IsNullOrEmpty(userId))
+            return TypedResults.Unauthorized();
 
         var notes = await db.Notes
             .AsNoTracking()
@@ -30,14 +42,22 @@ public static class NoteService
         return TypedResults.Ok(notes);
     }
 
-    public static async Task<Results<Ok<NoteDto>, NotFound>> GetNote(
-        AppDbContext db,
-        UserManager<User> user,
-        ClaimsPrincipal claims,
-        int notebookId,
-        int noteId)
+    /// <summary>
+    /// Retrieves a specific note by its ID for the authenticated user and notebook.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="user">The user manager for user operations.</param>
+    /// <param name="claims">The claims principal representing the current user.</param>
+    /// <param name="notebookId">The ID of the notebook containing the note.</param>
+    /// <param name="noteId">The ID of the note to retrieve.</param>
+    /// <returns>The note if found and authorized, otherwise not found or unauthorized result.</returns>
+    public static async Task<Results<Ok<NoteDto>, NotFound, UnauthorizedHttpResult>> GetNote(AppDbContext db,
+        UserManager<User> user, ClaimsPrincipal claims, int notebookId, int noteId)
     {
         var userId = user.GetUserId(claims);
+
+        if (string.IsNullOrEmpty(userId))
+            return TypedResults.Unauthorized();
 
         var note = await db.Notes
                    .AsNoTracking()
@@ -52,24 +72,29 @@ public static class NoteService
         return note != null ? TypedResults.Ok(note) : TypedResults.NotFound();
     }
 
-    public static async Task<Results<Created<NoteDto>, BadRequest<ErrorResponse>, ForbidHttpResult>> CreateNote(
-        AppDbContext db,
-        UserManager<User> userManager,
-        ClaimsPrincipal claims,
-        CreateNoteDto request,
-        int notebookId)
+    /// <summary>
+    /// Creates a new note in the specified notebook for the authenticated user.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="user">The user manager for user operations.</param>
+    /// <param name="claims">The claims principal representing the current user.</param>
+    /// <param name="request">The note creation request data.</param>
+    /// <param name="notebookId">The ID of the notebook to add the note to.</param>
+    /// <returns>The created note if successful, otherwise a bad request, forbidden, or unauthorized result.</returns>
+    public static async Task<Results<Created<NoteDto>, BadRequest<ErrorResponse>, ForbidHttpResult, UnauthorizedHttpResult>> CreateNote(AppDbContext db,
+        UserManager<User> user, ClaimsPrincipal claims, CreateNoteDto request, int notebookId)
     {
-        var userId = userManager.GetUserId(claims);
+        var userId = user.GetUserId(claims);
+
+        if (string.IsNullOrEmpty(userId))
+            return TypedResults.Unauthorized();
 
         if (string.IsNullOrWhiteSpace(request.Content))
             return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), "Content is required"));
 
-        const int contentLength = 500;
+        if (request.Content.Length > Constants.ContentLength)
+            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), $"Content must be less then {Constants.ContentLength}"));
 
-        if (request.Content.Length > contentLength)
-            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), $"Content must be less then {contentLength}"));
-
-        // Check that the notebook exists and belongs to this user
         var notebook = await db.Notebooks
             .Where(n => n.Id == notebookId && n.UserId == userId)
             .FirstOrDefaultAsync();
@@ -97,23 +122,29 @@ public static class NoteService
         return TypedResults.Created($"/notebooks/{notebookId}/notes/{noteDto.Id}", noteDto);
     }
 
-    public static async Task<Results<Ok<NoteDto>, NotFound, BadRequest<ErrorResponse>>> UpdateNote(
-        AppDbContext db,
-        UserManager<User> user,
-        ClaimsPrincipal claims,
-        int notebookId,
-        int noteId,
-        CreateNoteDto request)
+    /// <summary>
+    /// Updates the content of an existing note for the authenticated user.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="user">The user manager for user operations.</param>
+    /// <param name="claims">The claims principal representing the current user.</param>
+    /// <param name="notebookId">The ID of the notebook containing the note.</param>
+    /// <param name="noteId">The ID of the note to update.</param>
+    /// <param name="request">The note update request data.</param>
+    /// <returns>The updated note if successful, otherwise not found, bad request, or unauthorized result.</returns>
+    public static async Task<Results<Ok<NoteDto>, NotFound, BadRequest<ErrorResponse>, UnauthorizedHttpResult>> UpdateNote(AppDbContext db,
+        UserManager<User> user, ClaimsPrincipal claims, int notebookId, int noteId, CreateNoteDto request)
     {
         var userId = user.GetUserId(claims);
+
+        if (string.IsNullOrEmpty(userId))
+            return TypedResults.Unauthorized();
 
         if (string.IsNullOrWhiteSpace(request.Content))
             return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), "Content is required"));
 
-        const int contentLength = 500;
-
-        if (request.Content.Length > contentLength)
-            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), $"Content must be less then {contentLength}"));
+        if (request.Content.Length > Constants.ContentLength)
+            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), $"Content must be less then {Constants.ContentLength}"));
 
         var note = await db.Notes
             .Include(n => n.Notebook)
@@ -135,14 +166,22 @@ public static class NoteService
         return TypedResults.Ok(dto);
     }
 
-    public static async Task<Results<NoContent, NotFound>> DeleteNote(
-    AppDbContext db,
-    UserManager<User> user,
-    ClaimsPrincipal claims,
-    int notebookId,
-    int noteId)
+    /// <summary>
+    /// Deletes a note from the specified notebook for the authenticated user.
+    /// </summary>
+    /// <param name="db">The database context.</param>
+    /// <param name="user">The user manager for user operations.</param>
+    /// <param name="claims">The claims principal representing the current user.</param>
+    /// <param name="notebookId">The ID of the notebook containing the note.</param>
+    /// <param name="noteId">The ID of the note to delete.</param>
+    /// <returns>No content if successful, otherwise not found or unauthorized result.</returns>
+    public static async Task<Results<NoContent, NotFound, UnauthorizedHttpResult>> DeleteNote(AppDbContext db,
+        UserManager<User> user, ClaimsPrincipal claims, int notebookId, int noteId)
     {
         var userId = user.GetUserId(claims);
+
+        if (string.IsNullOrEmpty(userId))
+            return TypedResults.Unauthorized();
 
         var note = await db.Notes
             .Include(n => n.Notebook)
@@ -157,6 +196,4 @@ public static class NoteService
 
         return TypedResults.NoContent();
     }
-
-
 }
