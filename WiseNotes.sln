@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.5.2.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WiseNotes", "WiseNotes\WiseNotes.csproj", "{F47F40A6-76E6-F094-A905-01467323934A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notes.Api", "Notes.Api\Notes.Api.csproj", "{F47F40A6-76E6-F094-A905-01467323934A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WiseNotes.Tests", "WiseNotes.Tests\WiseNotes.Tests.csproj", "{287FF63F-A817-4D9E-804C-A1895269AD09}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notes.Api.Tests", "Notes.Api.Tests\Notes.Api.Tests.csproj", "{287FF63F-A817-4D9E-804C-A1895269AD09}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
