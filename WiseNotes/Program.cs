@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -86,7 +87,7 @@ if (builder.Environment.IsDevelopment())
     builder.Services.AddDbContext<AppDbContext>(
         opt => opt.UseSqlite("Data Source=wise.db"));
 
-    builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+    // builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 }
 else if (builder.Environment.IsProduction())
 {
@@ -98,7 +99,8 @@ var app = builder.Build();
 
 app.UseHttpsRedirection();
 
-app.UseMiddleware<GlobalErrorHandlingMiddleware>();
+// For testing custom global error handling middleware
+// app.UseMiddleware<GlobalErrorHandlingMiddleware>();
 
 app.UseExceptionHandler(errorApp =>
 {
@@ -107,19 +109,24 @@ app.UseExceptionHandler(errorApp =>
         context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
         context.Response.ContentType = "application/problem+json";
 
-        var problemDetails = new ProblemDetails
+        var contextFeature = context.Features.Get<IExceptionHandlerFeature>();
+
+        if (contextFeature is not null)
         {
-            Type = "https://example.com/errors/internal",
-            Title = "An unexpected error occurred",
-            Status = (int)HttpStatusCode.InternalServerError,
-            Detail = "Please contact support if the problem persists.",
-            Instance = context.Request.Path
-        };
+            var problemDetails = new ProblemDetails
+            {
+                Type = "https://example.com/errors/internal",
+                Title = "An unexpected error occurred",
+                Status = (int)HttpStatusCode.InternalServerError,
+                Detail = "Please contact support if the problem persists.",
+                Instance = context.Request.Path
+            };
 
-        problemDetails.Extensions.Add("traceId", context.TraceIdentifier);
-        problemDetails.Extensions.Add("timestamp", DateTime.UtcNow);
+            problemDetails.Extensions.Add("traceId", context.TraceIdentifier);
+            problemDetails.Extensions.Add("timestamp", DateTime.UtcNow);
 
-        await context.Response.WriteAsJsonAsync(problemDetails);
+            await context.Response.WriteAsJsonAsync(problemDetails);
+        }
     });
 });
 
@@ -129,7 +136,7 @@ app.UseFileServer();
 
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
+    // app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 
@@ -148,5 +155,11 @@ app.MapCustomIdentityApi<User>();
 
 NotebookEndpoints.Map(app);
 NoteEndpoints.Map(app);
+
+// Test endpoint to demonstrate error handling
+app.MapGet("/demo", () =>
+{
+    throw new ArgumentOutOfRangeException("Demo Exception");
+});
 
 app.Run();

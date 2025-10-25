@@ -30,7 +30,7 @@ public class GlobalErrorHandlingMiddleware
 
         var statusCode = HttpStatusCode.InternalServerError;
 
-        if (exception is Exception || exception is Exception)
+        if (exception is ArgumentOutOfRangeException || exception is Exception)
         {
             statusCode = HttpStatusCode.BadRequest;
             type = "https://example.com/errors/bad-request";

@@ -9,10 +9,10 @@ public class Constants
     /// <summary>
     /// The maximum allowed length for notebook titles.
     /// </summary>
-    public const int TitleLength = 25;
+    public const int TitleLength = 5; // TESTING
 
     /// <summary>
     /// The maximum allowed length for note content.
     /// </summary>
-    public const int ContentLength = 500;
+    public const int ContentLength = 25; // TESTING
 }

@@ -93,7 +93,7 @@ public static class NoteService
             return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), "Content is required"));
 
         if (request.Content.Length > Constants.ContentLength)
-            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), $"Content must be less then {Constants.ContentLength}"));
+            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Content), $"Content must be less then {Constants.ContentLength} characters."));
 
         var notebook = await db.Notebooks
             .Where(n => n.Id == notebookId && n.UserId == userId)
@@ -111,7 +111,15 @@ public static class NoteService
         };
 
         db.Notes.Add(note);
-        await db.SaveChangesAsync();
+
+        try
+        {
+            await db.SaveChangesAsync();
+        }
+        catch (DbUpdateException dex)
+        {
+            throw;
+        }
 
         var noteDto = new NoteDto
         {

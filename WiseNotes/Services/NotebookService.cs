@@ -91,7 +91,7 @@ public static class NotebookService
             return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), "Title is required"));
 
         if (request.Title.Length > Constants.TitleLength)
-            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), $"Title must be less then {Constants.TitleLength}"));
+            return TypedResults.BadRequest(new ErrorResponse(nameof(request.Title), $"Title must be less then {Constants.TitleLength} characters."));
 
         var notebook = new Notebook
         {
